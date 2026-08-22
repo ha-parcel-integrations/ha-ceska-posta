@@ -36,48 +36,42 @@ you act in one of these areas:
 
 ## Carrier-specific notes
 
-**API mechanics live in `carrier-research/api/ceska-posta/`** (private research
+**API mechanics live in `carrier-research/ceska-posta/api/`** (private research
 repo) — the two endpoints, auth (none), batching, the `stateId` vocabulary and
 its `ParcelStatus` derivation, the canonical field mapping and the timestamp
 format. Not duplicated here; this section is integration-level decisions only.
 
-**Two calls per refresh, not one.** `api.py`'s `async_get_parcels()` fetches
-the ParcelHistory backbone (`b2c.cpost.cz`, batched — up to ten tracking codes
-per call, chunked client-side) and then, per parcel, the Balikovna enrichment
-call (`www.balikovna.cz`, cannot batch). The two are merged into one raw dict
-per code — `{"id", "backbone", "enrichment"}` — before `parcels.py` ever sees
-it. `coordinator.py` no longer fetches per-parcel; it iterates the merged
-result and falls back to `_raw_cache` only when **both** halves are `None`
-(a genuine fetch failure) — never for a normal "no such consignment" `200`,
-which is real, current information and always shown.
+**Two calls per refresh, not one** — a backbone call and a per-parcel
+enrichment call from a second host, merged into one raw dict per code before
+`parcels.py` ever sees it (see the research doc for the exact shapes).
+`coordinator.py` falls back to `_raw_cache` only when **both** halves are
+`None` (a genuine fetch failure) — never for a normal "no such consignment"
+response, which is real, current information and always shown.
 
-**Not-found is a body condition, not an HTTP error.** Both surfaces answer
-`200` for an unknown code (`stateId` `-3`/`-4` on the backbone, `sender ==
-"-"` on the enrichment call). `parcels.is_not_found()` checks both signals;
+**Not-found is a body condition, not an HTTP error** — both surfaces answer
+`200` for an unknown code. `parcels.is_not_found()` checks both signals;
 `normalize_parcel` surfaces the result as a normal parcel in `unknown` status
-(the `-3`/`-4` events are excluded from the status ladder, so this falls out
-of the derivation naturally) plus a one-shot `WARNING` per tracking code.
+plus a one-shot `WARNING` per tracking code.
 
-**Status is a rank ladder, never the last event.** `parcels.STATUS_RANK` maps
-each `stateId` to `(rank, ParcelStatus)`; the canonical status is the
-highest rank reached across the parcel's events, after excluding SMS/e-mail
-notification records (`42`/`43`) and pickup-point designation records
-(`BG1`/`BG4`/`BG5`, empty text) — the latter because `BG1` has been observed
-**after** the terminal `91` event, which would make a last-event derivation
-report a delivered parcel as `at_pickup_point`. Three additional one-shot
-`WARNING`s guard the edges the happy path doesn't cover: an unmapped
-`stateId` (logs the code, `idIcon` and event text), the named
-`dorucovaniDate`/`dorucovaniOd`/`dorucovaniDo` ETA fields ever going non-null
-(never observed populated — the first sighting is data, not noise), and a
-`BG*` code outside the known three, or a `BG1` seen before any terminal event.
+**Status is a rank ladder, never the last event** — the canonical status is
+the highest rank reached across the parcel's events, after excluding
+notification and pickup-point-designation records (see the research doc for
+which codes and why: a pickup-point designation has been observed **after**
+the terminal delivered event, which would make a last-event derivation
+misreport a delivered parcel as still at the pickup point). One-shot
+`WARNING`s guard the edges the happy path doesn't cover: an unmapped code, an
+ETA field ever going non-null (never observed populated — the first sighting
+is data, not noise), and a pickup-point code outside the known set, or seen
+before any terminal event.
 
 **`dimensions` is always `None` by design**, not a gap — `dimensionType` is a
 size-class letter (`"M"`), not L×W×H. `const.CAPABILITIES` omits `dimensions`
 accordingly; keep the two in agreement if that ever changes.
 
-**`planned_to` falls back to `storedTo`** (the Balikovna collection deadline)
-while a parcel's status is `at_pickup_point`, since the named ETA window has
-never been observed populated on any sample.
+**`planned_to` falls back to the Balikovna collection deadline** while a
+parcel's status is `at_pickup_point`, since the named ETA window has never
+been observed populated on any sample (see the research doc for the raw
+field).
 
 **The tracking-code format is validated three ways**, because neither
 endpoint enforces it: `config_flow._TRACKING_CODE_RE` (13 chars, CZ domestic
@@ -92,11 +86,11 @@ blocks on a network round-trip.
 **Diagnostics redaction is non-optional, not defensive.** The Balikovna
 surface returns the recipient's real name, e-mail and phone to *any*
 anonymous caller who knows the tracking number — the tracking number itself
-is therefore a PII dereference key on that host, which is why `packageId`/`id`
-are in `diagnostics.TO_REDACT` alongside the obvious name/e-mail/phone/address
-keys. Side effect worth knowing: redacting the key `id` also blanks each raw
-history event's `stateId` in a diagnostics dump (that field is reused as
-`"id"` there too) — a deliberate over-redaction trade-off, not an oversight.
+is therefore a PII dereference key on that host, which is why the tracking-code
+fields are in `diagnostics.TO_REDACT` alongside the obvious name/e-mail/phone/
+address keys. Side effect worth knowing: one of those keys is reused inside
+each raw history event too, so redacting it also blanks that event field in a
+diagnostics dump — a deliberate over-redaction trade-off, not an oversight.
 
 **Balikovna is a second brand for the same operator, not a separate
 integration** — `README.md`, the HACS description and `manifest.json`
@@ -159,5 +153,5 @@ python -m pytest tests/ --cov=custom_components.ceska_posta
 
 Coverage must stay **above 95%** (silver `test-coverage` rule). Run before
 committing. A code change updates the README + this file + `docs/` in the same
-commit; the API reference lives in this carrier's directory under the private
-`carrier-research/api/`, never in this repo.
+commit; the API reference lives in the `api/` subfolder of this carrier's
+directory under the private `carrier-research/ceska-posta/`, never in this repo.

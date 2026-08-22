@@ -42,7 +42,7 @@ variables:
        | map('upper') | unique | list }}
   # Keyword gate for the AI fallback — localise to your language(s).
   is_parcel_mail: >-
-    {{ content | lower is search('pakket|bezorg|track|verzonden|onderweg|zending|shipment|delivery|levering') }}
+    {{ content | lower is search('package|shipped|out for delivery|track|shipment|delivery') }}
 
 conditions:
   # initial=true means "new message"; false means a duplicate trigger of
