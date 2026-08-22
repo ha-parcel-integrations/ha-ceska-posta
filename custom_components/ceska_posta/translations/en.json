@@ -1,0 +1,145 @@
+{
+  "title": "Ceska Posta",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up Ceska Posta",
+        "description": "Ceska Posta tracking needs no account or postal code — the hub is created right away. Add parcels afterwards via the integration options or the `ceska_posta.track_parcel` service."
+      }
+    },
+    "abort": {
+      "already_configured": "Ceska Posta is already set up."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Ceska Posta options",
+        "sections": {
+          "parcels": {
+            "name": "Parcels",
+            "data": {
+              "add": "Add a parcel",
+              "remove": "Remove parcels"
+            },
+            "data_description": {
+              "add": "Enter a 13-character Ceska Posta or Balikovna tracking code to start tracking it. You find it on the shipping confirmation e-mail or the missed-delivery card."
+            }
+          },
+          "delivered": {
+            "name": "Delivered parcels",
+            "data": {
+              "delivered_filter_type": "Filter by",
+              "delivered_filter_amount": "Amount"
+            },
+            "data_description": {
+              "delivered_filter_type": "Show delivered parcels from the last X days, or limit to the X most recent.",
+              "delivered_filter_amount": "Number of days or parcels to show."
+            }
+          },
+          "history": {
+            "name": "Parcel history",
+            "data": {
+              "include_history": "Include status history"
+            },
+            "data_description": {
+              "include_history": "Add a per-parcel history attribute listing each status update (timestamp, status, original text). Off by default."
+            }
+          },
+          "polling": {
+            "name": "Polling",
+            "data": {
+              "refresh_interval": "Refresh every"
+            },
+            "data_description": {
+              "refresh_interval": "How often the integration checks Ceska Posta for parcel updates. A slower interval is gentler on Ceska Posta's API; the default of 30 minutes is plenty for most parcels."
+            }
+          }
+        }
+      }
+    },
+    "error": {
+      "invalid_tracking_code": "That does not look like a Ceska Posta tracking code.",
+      "already_tracked": "That parcel is already being tracked.",
+      "unknown_tracking_code": "Ceska Posta and Balikovna have no record of that tracking code."
+    }
+  },
+  "selector": {
+    "refresh_interval": {
+      "options": {
+        "15": "15 minutes",
+        "30": "30 minutes",
+        "60": "60 minutes",
+        "120": "120 minutes",
+        "240": "240 minutes"
+      }
+    },
+    "delivered_filter_type": {
+      "options": {
+        "days": "Days",
+        "parcels": "Number of parcels"
+      }
+    }
+  },
+  "services": {
+    "track_parcel": {
+      "name": "Track parcel",
+      "description": "Start tracking a parcel by its Ceska Posta tracking code.",
+      "fields": {
+        "tracking_code": {
+          "name": "Tracking code",
+          "description": "The Ceska Posta tracking code."
+        }
+      }
+    },
+    "untrack_parcel": {
+      "name": "Untrack parcel",
+      "description": "Stop tracking a parcel by its Ceska Posta tracking code.",
+      "fields": {
+        "tracking_code": {
+          "name": "Tracking code",
+          "description": "The Ceska Posta tracking code to stop tracking."
+        }
+      }
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "parcel_registered": "A parcel was registered",
+      "parcel_status_changed": "A parcel's status changed",
+      "parcel_delivered": "A parcel was delivered",
+      "parcel_delivery_time_changed": "A parcel's expected delivery time changed"
+    }
+  },
+  "entity": {
+    "button": {
+      "refresh": {
+        "name": "Refresh"
+      }
+    },
+    "calendar": {
+      "deliveries": {
+        "name": "Deliveries"
+      }
+    },
+    "sensor": {
+      "incoming_parcels": {
+        "name": "Incoming parcels",
+        "unit_of_measurement": "parcels"
+      },
+      "next_delivery": {
+        "name": "Next delivery"
+      },
+      "delivered_parcels": {
+        "name": "Delivered parcels",
+        "unit_of_measurement": "parcels"
+      },
+      "last_update": {
+        "name": "Last successful update"
+      },
+      "parcel": {
+        "name": "Parcel {barcode}"
+      }
+    }
+  }
+}

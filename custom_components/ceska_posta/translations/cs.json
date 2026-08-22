@@ -1,0 +1,145 @@
+{
+  "title": "Ceska Posta",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Nastavit Ceska Posta",
+        "description": "Sledování Ceska Posta nevyžaduje účet ani PSČ — hub se vytvoří ihned. Zásilky přidáte později přes možnosti integrace nebo službu `ceska_posta.track_parcel`."
+      }
+    },
+    "abort": {
+      "already_configured": "Ceska Posta je již nastavena."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Možnosti Ceska Posta",
+        "sections": {
+          "parcels": {
+            "name": "Zásilky",
+            "data": {
+              "add": "Přidat zásilku",
+              "remove": "Odebrat zásilky"
+            },
+            "data_description": {
+              "add": "Zadejte 13znakové podací číslo Ceska Posta nebo Balíkovny pro sledování zásilky. Najdete jej na potvrzení o odeslání nebo na oznámení o nedoručení."
+            }
+          },
+          "delivered": {
+            "name": "Doručené zásilky",
+            "data": {
+              "delivered_filter_type": "Filtrovat podle",
+              "delivered_filter_amount": "Počet"
+            },
+            "data_description": {
+              "delivered_filter_type": "Zobrazit doručené zásilky za posledních X dní, nebo omezit na X nejnovějších.",
+              "delivered_filter_amount": "Počet dní nebo zásilek k zobrazení."
+            }
+          },
+          "history": {
+            "name": "Historie zásilky",
+            "data": {
+              "include_history": "Zahrnout historii stavů"
+            },
+            "data_description": {
+              "include_history": "Přidá u každé zásilky atribut s historií každé změny stavu (čas, stav, původní text). Ve výchozím nastavení vypnuto."
+            }
+          },
+          "polling": {
+            "name": "Aktualizace",
+            "data": {
+              "refresh_interval": "Aktualizovat každých"
+            },
+            "data_description": {
+              "refresh_interval": "Jak často integrace kontroluje Ceska Posta ohledně změn zásilek. Delší interval je šetrnější k API Ceska Posty; výchozích 30 minut stačí pro většinu zásilek."
+            }
+          }
+        }
+      }
+    },
+    "error": {
+      "invalid_tracking_code": "Toto nevypadá jako podací číslo Ceska Posta.",
+      "already_tracked": "Tato zásilka je již sledována.",
+      "unknown_tracking_code": "Ceska Posta ani Balíkovna nemají o tomto podacím čísle žádný záznam."
+    }
+  },
+  "selector": {
+    "refresh_interval": {
+      "options": {
+        "15": "15 minut",
+        "30": "30 minut",
+        "60": "60 minut",
+        "120": "120 minut",
+        "240": "240 minut"
+      }
+    },
+    "delivered_filter_type": {
+      "options": {
+        "days": "Dny",
+        "parcels": "Počet zásilek"
+      }
+    }
+  },
+  "services": {
+    "track_parcel": {
+      "name": "Sledovat zásilku",
+      "description": "Začít sledovat zásilku podle podacího čísla Ceska Posta.",
+      "fields": {
+        "tracking_code": {
+          "name": "Podací číslo",
+          "description": "Podací číslo Ceska Posta."
+        }
+      }
+    },
+    "untrack_parcel": {
+      "name": "Přestat sledovat zásilku",
+      "description": "Přestat sledovat zásilku podle podacího čísla Ceska Posta.",
+      "fields": {
+        "tracking_code": {
+          "name": "Podací číslo",
+          "description": "Podací číslo Ceska Posta, které se má přestat sledovat."
+        }
+      }
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "parcel_registered": "Zásilka byla zaregistrována",
+      "parcel_status_changed": "Stav zásilky se změnil",
+      "parcel_delivered": "Zásilka byla doručena",
+      "parcel_delivery_time_changed": "Očekávaný čas doručení zásilky se změnil"
+    }
+  },
+  "entity": {
+    "button": {
+      "refresh": {
+        "name": "Aktualizovat"
+      }
+    },
+    "calendar": {
+      "deliveries": {
+        "name": "Doručení"
+      }
+    },
+    "sensor": {
+      "incoming_parcels": {
+        "name": "Příchozí zásilky",
+        "unit_of_measurement": "zásilky"
+      },
+      "next_delivery": {
+        "name": "Další doručení"
+      },
+      "delivered_parcels": {
+        "name": "Doručené zásilky",
+        "unit_of_measurement": "zásilky"
+      },
+      "last_update": {
+        "name": "Poslední úspěšná aktualizace"
+      },
+      "parcel": {
+        "name": "Zásilka {barcode}"
+      }
+    }
+  }
+}
