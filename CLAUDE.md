@@ -79,6 +79,14 @@ accordingly; keep the two in agreement if that ever changes.
 while a parcel's status is `at_pickup_point`, since the named ETA window has
 never been observed populated on any sample.
 
+**`out_for_delivery` fills `planned_from`/`planned_to` from the `53` event's
+own date**, spanning the full day (`00:00:00`–`23:59:59`) since no
+time-of-day is ever given either. `ParcelStatus.OUT_FOR_DELIVERY` is defined
+suite-wide as "on a delivery vehicle today", so the event date already *is*
+the delivery day — this only applies when the named ETA fields are still
+empty, and only for this one status; `in_transit` can span days and its last
+event date says nothing about when delivery will actually happen.
+
 **The tracking-code format is validated three ways**, because neither
 endpoint enforces it: `config_flow._TRACKING_CODE_RE` (13 chars, CZ domestic
 *or* UPU S10 shape), then a **live lookup**

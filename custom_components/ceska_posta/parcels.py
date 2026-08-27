@@ -312,6 +312,14 @@ def _terminal_event(events: list[dict]) -> dict | None:
     return None
 
 
+def _out_for_delivery_event(events: list[dict]) -> dict | None:
+    """Return the last ``53`` (being delivered) event, if present."""
+    for event in reversed(events):
+        if event.get("id") == "53":
+            return event
+    return None
+
+
 def _last_status_text(events: list[dict]) -> str | None:
     """Return the most recent non-excluded event's text, for ``raw_status``.
 
@@ -406,6 +414,17 @@ def normalize_parcel(raw: dict, *, include_history: bool = False) -> dict:
     planned_to = to_iso_timestamp(eta_to)
     if status is ParcelStatus.AT_PICKUP_POINT and not planned_to:
         planned_to = to_iso_timestamp(enrichment.get("storedTo"))
+
+    # OUT_FOR_DELIVERY is defined as "on a delivery vehicle today" (see
+    # ParcelStatus), so the ``53`` event's own date *is* the delivery day even
+    # though the named ETA window is never populated — no time-of-day is ever
+    # given, so the fallback spans the whole day.
+    if status is ParcelStatus.OUT_FOR_DELIVERY and not planned_from and not planned_to:
+        ofd_event = _out_for_delivery_event(events)
+        ofd_date = ofd_event.get("date") if ofd_event else None
+        if ofd_date:
+            planned_from = f"{ofd_date}T00:00:00"
+            planned_to = f"{ofd_date}T23:59:59"
 
     weight = attributes.get("weight")
     if not weight:  # 0 and missing both mean "unknown", not zero

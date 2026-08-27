@@ -380,6 +380,23 @@ def test_normalize_active_parcel():
     assert parcel["delivered_at"] is None
 
 
+def test_normalize_out_for_delivery_uses_event_date_as_planned_window():
+    """No named ETA is ever populated, but OUT_FOR_DELIVERY means "on a
+    delivery vehicle today" — the ``53`` event's own date fills the day."""
+    parcel = normalize_parcel(active_sample())
+    assert parcel["planned_from"] == "2026-04-29T00:00:00"
+    assert parcel["planned_to"] == "2026-04-29T23:59:59"
+
+
+def test_normalize_out_for_delivery_keeps_named_eta_when_populated():
+    sample = active_sample()
+    sample["backbone"]["attributes"]["dorucovaniOd"] = "2026-04-29T13:00:00Z"
+    sample["backbone"]["attributes"]["dorucovaniDo"] = "2026-04-29T17:00:00Z"
+    parcel = normalize_parcel(sample)
+    assert parcel["planned_from"] == "2026-04-29T13:00:00Z"
+    assert parcel["planned_to"] == "2026-04-29T17:00:00Z"
+
+
 def test_normalize_in_transit_parcel():
     parcel = normalize_parcel(in_transit_sample())
     assert parcel["status"] == ParcelStatus.IN_TRANSIT
