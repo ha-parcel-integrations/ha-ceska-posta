@@ -1,6 +1,4 @@
 """Tests for the Ceska Posta config and options flow."""
-from unittest.mock import AsyncMock, patch
-
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.ceska_posta.config_flow import (
