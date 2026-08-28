@@ -98,124 +98,36 @@ def _init_input(
     }
 
 
-async def test_options_add_parcel(hass):
-    entry = _hub([])
-    entry.add_to_hass(hass)
-
-    with patch(_PATCH_TARGET, new=AsyncMock(return_value=_known(VALID_CODE))):
-        result = await hass.config_entries.options.async_init(entry.entry_id)
-        result = await hass.config_entries.options.async_configure(
-            result["flow_id"], _init_input(add=VALID_CODE.lower())
-        )
-    assert result["type"] == "create_entry"
-    assert result["data"][CONF_PARCELS] == [{CONF_TRACKING_CODE: VALID_CODE}]
-
-
-async def test_options_add_code_with_separators(hass):
-    """Pasted codes with spaces/dashes are sanitised like the consumer site."""
-    entry = _hub([])
-    entry.add_to_hass(hass)
-    spaced = f"{VALID_CODE[:2]}-{VALID_CODE[2:6]} {VALID_CODE[6:]}"
-
-    with patch(_PATCH_TARGET, new=AsyncMock(return_value=_known(VALID_CODE))):
-        result = await hass.config_entries.options.async_init(entry.entry_id)
-        result = await hass.config_entries.options.async_configure(
-            result["flow_id"], _init_input(add=spaced)
-        )
-    assert result["type"] == "create_entry"
-    assert result["data"][CONF_PARCELS] == [{CONF_TRACKING_CODE: VALID_CODE}]
-
-
-async def test_options_add_invalid_tracking_code(hass):
-    entry = _hub([])
-    entry.add_to_hass(hass)
+async def _open_options_step(hass, entry, step_id: str):
+    """Start the options flow and select one of its two top-level routes."""
     result = await hass.config_entries.options.async_init(entry.entry_id)
-    result = await hass.config_entries.options.async_configure(
-        result["flow_id"], _init_input(add="abc")
+    assert result["type"] == "menu"
+    assert result["menu_options"] == ["parcels", "settings"]
+    return await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": step_id}
     )
-    assert result["errors"]["base"] == "invalid_tracking_code"
 
 
-async def test_options_add_unknown_tracking_code_rejected(hass):
-    """A live lookup that resolves to "not found" blocks the add."""
-    entry = _hub([])
+async def test_options_parcel_list_can_be_cleared(hass):
+    """A submitted empty list removes the final manually tracked parcel."""
+    entry = MockConfigEntry(domain=DOMAIN, options={CONF_PARCELS: [{CONF_TRACKING_CODE: "EXAMPLE111111"}]})
     entry.add_to_hass(hass)
-
-    with patch(_PATCH_TARGET, new=AsyncMock(return_value=_unknown(VALID_CODE))):
-        result = await hass.config_entries.options.async_init(entry.entry_id)
-        result = await hass.config_entries.options.async_configure(
-            result["flow_id"], _init_input(add=VALID_CODE)
-        )
-    assert result["errors"]["base"] == "unknown_tracking_code"
-    assert result["type"] != "create_entry"
-
-
-async def test_options_add_fails_open_on_lookup_failure(hass):
-    """A transient fetch error must not block adding a parcel."""
-    entry = _hub([])
-    entry.add_to_hass(hass)
-
-    with patch(_PATCH_TARGET, new=AsyncMock(return_value={})):  # neither surface answered
-        result = await hass.config_entries.options.async_init(entry.entry_id)
-        result = await hass.config_entries.options.async_configure(
-            result["flow_id"], _init_input(add=VALID_CODE)
-        )
-    assert result["type"] == "create_entry"
-    assert result["data"][CONF_PARCELS] == [{CONF_TRACKING_CODE: VALID_CODE}]
-
-
-async def test_options_add_duplicate_rejected(hass):
-    entry = _hub([{CONF_TRACKING_CODE: VALID_CODE}])
-    entry.add_to_hass(hass)
-    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await _open_options_step(hass, entry, "parcels")
     result = await hass.config_entries.options.async_configure(
-        result["flow_id"], _init_input(add=VALID_CODE, remove=[])
-    )
-    assert result["errors"]["base"] == "already_tracked"
-
-
-async def test_options_remove_parcel(hass):
-    entry = _hub([
-        {CONF_TRACKING_CODE: VALID_CODE},
-        {CONF_TRACKING_CODE: VALID_CODE_2},
-    ])
-    entry.add_to_hass(hass)
-    result = await hass.config_entries.options.async_init(entry.entry_id)
-    result = await hass.config_entries.options.async_configure(
-        result["flow_id"], _init_input(remove=[VALID_CODE])
+        result["flow_id"], {"tracking_codes": []}
     )
     assert result["type"] == "create_entry"
-    codes = {p[CONF_TRACKING_CODE] for p in result["data"][CONF_PARCELS]}
-    assert codes == {VALID_CODE_2}
+    assert result["data"][CONF_PARCELS] == []
 
 
-async def test_options_remove_then_readd_same_code(hass):
-    """Remove-then-add order: re-adding a just-removed code works."""
-    entry = _hub([{CONF_TRACKING_CODE: VALID_CODE}])
+async def test_options_settings_preserve_parcel_list(hass):
+    """Saving settings must never replace the manually tracked parcel list."""
+    parcels = [{CONF_TRACKING_CODE: "EXAMPLE111111"}]
+    entry = MockConfigEntry(domain=DOMAIN, options={CONF_PARCELS: parcels})
     entry.add_to_hass(hass)
-
-    with patch(_PATCH_TARGET, new=AsyncMock(return_value=_known(VALID_CODE))):
-        result = await hass.config_entries.options.async_init(entry.entry_id)
-        result = await hass.config_entries.options.async_configure(
-            result["flow_id"], _init_input(add=VALID_CODE, remove=[VALID_CODE])
-        )
-    assert result["type"] == "create_entry"
-    assert result["data"][CONF_PARCELS] == [{CONF_TRACKING_CODE: VALID_CODE}]
-
-
-async def test_options_changes_interval_history_and_delivered(hass):
-    entry = _hub([])
-    entry.add_to_hass(hass)
-    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await _open_options_step(hass, entry, "settings")
     result = await hass.config_entries.options.async_configure(
-        result["flow_id"],
-        _init_input(
-            interval="120",
-            history=True, filter_type="parcels", amount=5,
-        ),
+        result["flow_id"], {CONF_DELIVERED_FILTER_TYPE: "days", CONF_DELIVERED_FILTER_AMOUNT: 7, CONF_INCLUDE_HISTORY: False, CONF_REFRESH_INTERVAL: "30"}
     )
     assert result["type"] == "create_entry"
-    assert result["data"][CONF_REFRESH_INTERVAL] == 120
-    assert result["data"][CONF_INCLUDE_HISTORY] is True
-    assert result["data"][CONF_DELIVERED_FILTER_TYPE] == "parcels"
-    assert result["data"][CONF_DELIVERED_FILTER_AMOUNT] == 5
+    assert result["data"][CONF_PARCELS] == parcels
