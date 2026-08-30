@@ -45,15 +45,6 @@
             "data_description": {
               "include_history": "Voegt per pakket een history-attribuut toe met elke statusupdate (tijdstip, status, originele tekst). Standaard uit."
             }
-          },
-          "polling": {
-            "name": "Verversen",
-            "data": {
-              "refresh_interval": "Ververs elke"
-            },
-            "data_description": {
-              "refresh_interval": "Hoe vaak de integratie Ceska Posta controleert op pakketupdates. \"Automatisch\" (de standaard voor nieuwe installaties) polt sneller rond een verwachte bezorging en langzamer 's nachts; een vaste waarde polt dag en nacht met dat constante interval."
-            }
           }
         },
         "menu_options": {
@@ -72,8 +63,7 @@
         "data": {
           "delivered_filter_type": "Bezorgde pakketten: filteren op",
           "delivered_filter_amount": "Bezorgde pakketten: aantal",
-          "include_history": "Statusgeschiedenis opnemen",
-          "refresh_interval": "Vernieuwen elke"
+          "include_history": "Statusgeschiedenis opnemen"
         }
       }
     },
@@ -84,16 +74,6 @@
     }
   },
   "selector": {
-    "refresh_interval": {
-      "options": {
-        "auto": "Automatisch (aanbevolen)",
-        "15": "15 minuten",
-        "30": "30 minuten",
-        "60": "60 minuten",
-        "120": "120 minuten",
-        "240": "240 minuten"
-      }
-    },
     "delivered_filter_type": {
       "options": {
         "days": "Dagen",

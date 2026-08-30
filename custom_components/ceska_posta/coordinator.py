@@ -18,45 +18,20 @@ from .api import CeskaPostaApiClient
 from .const import (
     CONF_INCLUDE_HISTORY,
     CONF_PARCELS,
-    CONF_REFRESH_INTERVAL,
     CONF_TRACKING_CODE,
     DEFAULT_INCLUDE_HISTORY,
-    DEFAULT_REFRESH_INTERVAL,
     DOMAIN,
     HOT_INTERVAL_MINUTES,
     HOT_LOOKAHEAD_HOURS,
     MID_INTERVAL_MINUTES,
     QUIET_WINDOW_END_HOUR,
     QUIET_WINDOW_START_HOUR,
-    REFRESH_INTERVAL_AUTO,
     STAGGER_MINUTES,
     ParcelStatus,
 )
 from .parcels import apply_delivered_filter, normalize_parcel, sort_parcels_by_ts
 
 _LOGGER = logging.getLogger(__name__)
-
-
-def _refresh_setting(entry: ConfigEntry) -> str | int:
-    """Return the raw configured refresh setting — ``"auto"`` or a minute count."""
-    return entry.options.get(CONF_REFRESH_INTERVAL, DEFAULT_REFRESH_INTERVAL)
-
-
-def _refresh_interval(entry: ConfigEntry) -> timedelta:
-    """Return the coordinator's *initial* (or option-update-retuned) interval.
-
-    For a fixed setting this is the final word — also what
-    ``_async_options_updated`` reapplies whenever entry options change. For
-    ``"auto"`` it is only a starting point — the hot cadence — since
-    ``_async_update_data`` recomputes it every refresh via
-    ``_next_update_interval``, and a refresh always follows an options
-    update anyway (``_async_options_updated`` calls
-    ``async_request_refresh()`` right after).
-    """
-    setting = _refresh_setting(entry)
-    if setting == REFRESH_INTERVAL_AUTO:
-        return timedelta(minutes=HOT_INTERVAL_MINUTES)
-    return timedelta(minutes=int(setting))
 
 
 def _stagger_minutes(entry_id: str) -> int:
@@ -159,7 +134,10 @@ class CeskaPostaCoordinator(DataUpdateCoordinator[list[dict]]):
             # base class, which every helper below relies on.
             config_entry=entry,
             name=DOMAIN,
-            update_interval=_refresh_interval(entry),
+            # Recomputed at the end of every refresh (Section 2.1's tiering) —
+            # start with the hot cadence so the very first poll, right after
+            # setup, happens promptly regardless of what it finds.
+            update_interval=timedelta(minutes=HOT_INTERVAL_MINUTES),
         )
         self._client = client
         self.delivered: list[dict] = []
@@ -182,14 +160,14 @@ class CeskaPostaCoordinator(DataUpdateCoordinator[list[dict]]):
         self._cached_device_id: str | None = None
         # Timestamp of the last successful poll (diagnostic sensor).
         self.last_success_time: datetime | None = None
-        # Tier last computed by _hottest_tier_minutes when the refresh
-        # setting is "auto" — surfaced in diagnostics. None when polling at a
-        # fixed interval instead, or while auto polling is fully suspended.
+        # Last tier computed by _hottest_tier_minutes — surfaced in
+        # diagnostics; ``None`` before the first refresh and whenever polling
+        # is fully suspended (nothing tracked, or everything delivered).
         self._current_tier_minutes: int | None = None
 
     @property
     def current_tier_minutes(self) -> int | None:
-        """Tier minutes computed on the last "auto" refresh (diagnostics only)."""
+        """Tier minutes computed on the last refresh (diagnostics only)."""
         return self._current_tier_minutes
 
     def _device_id(self) -> str | None:
@@ -293,17 +271,11 @@ class CeskaPostaCoordinator(DataUpdateCoordinator[list[dict]]):
         if not codes or errors < len(codes):
             self.last_success_time = datetime.now(timezone.utc)
 
-        setting = _refresh_setting(self.config_entry)
-        if setting == REFRESH_INTERVAL_AUTO:
-            now = dt_util.now()
-            self._current_tier_minutes = _hottest_tier_minutes(normalized_active, now)
-            self.update_interval = _next_update_interval(
-                now, self._current_tier_minutes, self.config_entry.entry_id
-            )
-        else:
-            self._current_tier_minutes = None
-            self.update_interval = timedelta(minutes=int(setting))
-
+        now = dt_util.now()
+        self._current_tier_minutes = _hottest_tier_minutes(normalized_active, now)
+        self.update_interval = _next_update_interval(
+            now, self._current_tier_minutes, self.config_entry.entry_id
+        )
         return normalized_active
 
     def _fire_change_events(self, parcels: list[dict]) -> None:

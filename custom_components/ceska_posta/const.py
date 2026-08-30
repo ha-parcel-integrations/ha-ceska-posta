@@ -88,26 +88,9 @@ CONF_DELIVERED_FILTER_AMOUNT = "delivered_filter_amount"
 DEFAULT_DELIVERED_FILTER_TYPE = "days"
 DEFAULT_DELIVERED_FILTER_AMOUNT = 7
 
-# Refresh interval (minutes) controls how often the coordinator polls the
-# carrier. Default 30 min keeps the load on a consumer endpoint gentle; the
-# minimum is 15 min for the same reason.
-#
-# Deliberate divergence from the HA Core rule that polling intervals are not
-# user-configurable: that rule targets core integrations, and in a HACS parcel
-# tracker a tunable cadence is a wanted feature. Generate with
-# ``--interval fixed`` instead when the carrier throttles or soft-bans unusual
-# traffic — that drops the option entirely and hard-codes the cadence, so users
-# cannot dial it down to something that gets them blocked.
-CONF_REFRESH_INTERVAL = "refresh_interval"
-REFRESH_INTERVAL_AUTO = "auto"
-REFRESH_INTERVAL_OPTIONS = (15, 30, 60, 120, 240)
-DEFAULT_REFRESH_INTERVAL = 30  # minutes — default for entries that predate "auto"
-# New config entries default to "auto" (dynamic-polling rollout, 2026-08-30);
-# an existing entry keeps whatever it already has, numeric or "auto".
-DEFAULT_NEW_REFRESH_INTERVAL = REFRESH_INTERVAL_AUTO
-
-# Dynamic, status-driven polling — selected via "auto" above. See
-# carrier-research/dynamic-polling.md for the full algorithm and reasoning.
+# Dynamic, status-driven polling — unconditional across the suite, no
+# user-facing interval option (see scaffold/CLAUDE.md's "Dynamic polling"
+# section for the full algorithm and the reasoning behind it).
 #
 # Quiet window: no polling between these local hours except the two anchors
 # below, for overnight / end-of-day catch-up.
