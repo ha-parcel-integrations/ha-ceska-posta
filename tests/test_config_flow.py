@@ -12,7 +12,9 @@ from custom_components.ceska_posta.const import (
     CONF_PARCELS,
     CONF_REFRESH_INTERVAL,
     CONF_TRACKING_CODE,
+    DEFAULT_NEW_REFRESH_INTERVAL,
     DOMAIN,
+    REFRESH_INTERVAL_AUTO,
 )
 
 from .payloads import active_sample, not_found_sample
@@ -56,6 +58,9 @@ async def test_user_flow_creates_hub_without_input(hass):
     assert result["type"] == "create_entry"
     assert result["title"] == "Ceska Posta"
     assert result["options"][CONF_PARCELS] == []
+    # New entries default to dynamic polling (dynamic-polling.md Section 5.2).
+    assert result["options"][CONF_REFRESH_INTERVAL] == DEFAULT_NEW_REFRESH_INTERVAL
+    assert DEFAULT_NEW_REFRESH_INTERVAL == REFRESH_INTERVAL_AUTO
 
 
 async def test_second_hub_rejected(hass):
@@ -129,3 +134,23 @@ async def test_options_settings_preserve_parcel_list(hass):
     )
     assert result["type"] == "create_entry"
     assert result["data"][CONF_PARCELS] == parcels
+
+
+async def test_options_settings_can_switch_to_auto(hass):
+    """An existing fixed-interval entry can opt into dynamic polling."""
+    entry = MockConfigEntry(
+        domain=DOMAIN, options={CONF_PARCELS: [], CONF_REFRESH_INTERVAL: 30}
+    )
+    entry.add_to_hass(hass)
+    result = await _open_options_step(hass, entry, "settings")
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {
+            CONF_DELIVERED_FILTER_TYPE: "days",
+            CONF_DELIVERED_FILTER_AMOUNT: 7,
+            CONF_INCLUDE_HISTORY: False,
+            CONF_REFRESH_INTERVAL: REFRESH_INTERVAL_AUTO,
+        },
+    )
+    assert result["type"] == "create_entry"
+    assert result["data"][CONF_REFRESH_INTERVAL] == REFRESH_INTERVAL_AUTO

@@ -23,6 +23,7 @@ Part of the [ha-parcel-integrations](https://github.com/ha-parcel-integrations) 
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [Options](#options)
+- [Dynamic polling](#dynamic-polling)
 - [Removal](#removal)
 - [Sensors](#sensors)
 - [Parcel status reference](#parcel-status-reference)
@@ -81,7 +82,33 @@ Open **Configure** on the integration entry:
 | Parcels | Add / remove | — | Manage the tracked tracking codes. Changes apply immediately, no restart. |
 | Delivered parcels | Filter by / amount | last 7 days | How long delivered parcels stay visible on the delivered sensor. |
 | Parcel history | Include status history | off | Adds a `history` attribute per parcel with each status update. |
-| Polling | Refresh every | 30 min | How often Ceska Posta is checked. Slower is gentler on their API. |
+| Polling | Refresh every | Automatic | How often Ceska Posta is checked: **Automatic**, or a fixed **15 / 30 / 60 / 120 / 240 minutes**. New installs default to Automatic; an existing install keeps its current fixed value until changed. Changes apply immediately, no HA restart needed. See [Dynamic polling](#dynamic-polling) below. |
+
+## Dynamic polling
+
+You can set **Refresh every** to **Automatic** instead of a fixed number of
+minutes. Instead of polling Ceska Posta at the same rate around the clock,
+the integration adjusts its own cadence to what your tracked parcels are
+actually doing:
+
+- **Quiet hours** — no polling between 00:00–06:00 local time, aside from one
+  catch-up check at each end of that window (around midnight and around 6
+  AM), so an overnight update is never missed.
+- **Hot (every 15 minutes)** — while any tracked parcel is out for delivery
+  today, starting an hour before its delivery window opens (or immediately if
+  no window is known yet).
+- **Normal (every 45 minutes)** — for anything else still on its way.
+- **Fully paused** — once every tracked parcel has been delivered, or nothing
+  is tracked at all, polling stops until you add a parcel back (adding one
+  always triggers an immediate check, regardless of the pause).
+- A small, fixed per-hub offset is added on top, so not every Ceska Posta hub
+  out there polls at exactly the same second.
+
+This is opt-in for now, but it's expected to become the default — and
+eventually the only — polling behaviour across the parcel-integrations
+suite. If you try Automatic, we'd genuinely like to hear how it goes:
+share your experience in [this
+discussion](https://github.com/orgs/ha-parcel-integrations/discussions/12).
 
 ## Removal
 
