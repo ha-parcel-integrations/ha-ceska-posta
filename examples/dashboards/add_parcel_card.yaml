@@ -28,8 +28,6 @@ ceska_posta_track_new_parcel:
     - action: ceska_posta.track_parcel
       data:
         tracking_code: "{{ states('input_text.ceska_posta_new_parcel') | trim }}"
-        
-        
     - action: input_text.set_value
       target:
         entity_id: input_text.ceska_posta_new_parcel
