@@ -127,6 +127,10 @@
         "name": "Příchozí zásilky",
         "unit_of_measurement": "zásilky"
       },
+      "awaiting_pickup": {
+        "name": "Připraveno k vyzvednutí",
+        "unit_of_measurement": "zásilek"
+      },
       "next_delivery": {
         "name": "Očekávané doručení"
       },
