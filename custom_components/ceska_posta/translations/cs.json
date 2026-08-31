@@ -53,7 +53,7 @@
         }
       },
       "parcels": {
-        "title": "Zásilky",
+        "title": "Spravovat zásilky",
         "data": {
           "tracking_codes": "Sledovací kódy"
         }
