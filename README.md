@@ -50,7 +50,6 @@ Part of the [ha-parcel-integrations](https://github.com/ha-parcel-integrations) 
 
 ## Requirements
 
-- Home Assistant 2024.12 or newer
 - A Ceska Posta or Balikovna parcel and its tracking code (13 characters, from
   the shipping confirmation e-mail or the missed-delivery card) — no account
   needed
