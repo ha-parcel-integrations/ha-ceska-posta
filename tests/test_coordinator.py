@@ -212,6 +212,49 @@ async def test_update_merges_multiple_parcels(hass):
     assert coordinator.last_success_time is not None
 
 
+async def test_delivered_code_skipped_from_fetch(hass):
+    """A delivered code stops being fetched from the next cycle on."""
+    entry = _entry_with(
+        [{CONF_TRACKING_CODE: ACTIVE_CODE}, {CONF_TRACKING_CODE: DELIVERED_CODE}]
+    )
+    entry.add_to_hass(hass)
+    client = AsyncMock()
+    client.async_get_parcels.side_effect = lambda codes: {
+        c: _client_result(active_sample(c) if c == ACTIVE_CODE else delivered_sample(c))
+        for c in codes
+    }
+    coordinator = CeskaPostaCoordinator(hass, client, entry)
+
+    await coordinator._async_update_data()
+    client.async_get_parcels.assert_awaited_with([ACTIVE_CODE, DELIVERED_CODE])
+    assert coordinator.delivered_codes == {DELIVERED_CODE}
+
+    data = await coordinator._async_update_data()
+
+    # Only the still-active code is fetched — the delivered one is skipped.
+    client.async_get_parcels.assert_awaited_with([ACTIVE_CODE])
+    assert any(p["barcode"] == DELIVERED_CODE for p in coordinator.delivered)
+    assert data[0]["barcode"] == ACTIVE_CODE
+
+
+async def test_delivered_code_forgotten_when_untracked(hass):
+    """Untracking a delivered code drops it from the skip set too."""
+    entry = _entry_with([{CONF_TRACKING_CODE: DELIVERED_CODE}])
+    entry.add_to_hass(hass)
+    client = AsyncMock()
+    client.async_get_parcels.return_value = {
+        DELIVERED_CODE: _client_result(delivered_sample())
+    }
+    coordinator = CeskaPostaCoordinator(hass, client, entry)
+
+    await coordinator._async_update_data()
+    assert coordinator.delivered_codes == {DELIVERED_CODE}
+
+    hass.config_entries.async_update_entry(entry, options={CONF_PARCELS: []})
+    await coordinator._async_update_data()
+    assert coordinator.delivered_codes == set()
+
+
 async def test_update_shows_unknown_for_not_found_code(hass):
     entry = _entry_with([{CONF_TRACKING_CODE: NOT_FOUND_CODE}])
     entry.add_to_hass(hass)
@@ -318,11 +361,14 @@ async def test_update_makes_one_batched_call_not_one_per_parcel(hass):
 
 async def test_cache_only_poll_does_not_stamp_last_success(hass):
     """A poll served entirely from cache must not look like a success."""
-    entry = _entry_with([{CONF_TRACKING_CODE: DELIVERED_CODE}])
+    # Must still be active (not delivered) — a delivered code is skipped from
+    # the fetch entirely from the next cycle on, which is covered separately
+    # by test_delivered_code_skipped_from_fetch.
+    entry = _entry_with([{CONF_TRACKING_CODE: ACTIVE_CODE}])
     entry.add_to_hass(hass)
     client = AsyncMock()
     client.async_get_parcels.return_value = {
-        DELIVERED_CODE: _client_result(delivered_sample())
+        ACTIVE_CODE: _client_result(active_sample())
     }
     coordinator = CeskaPostaCoordinator(hass, client, entry)
     await coordinator._async_update_data()

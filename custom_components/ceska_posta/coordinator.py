@@ -147,6 +147,12 @@ class CeskaPostaCoordinator(DataUpdateCoordinator[list[dict]]):
         # lifetime (resets on restart). Not used for a "not found" 200 body —
         # that is a fresh, real signal, not a failure to paper over.
         self._raw_cache: dict[str, dict] = {}
+        # Tracking codes confirmed delivered on a prior refresh — excluded
+        # from the batch fetch this cycle since a delivered parcel's payload
+        # can never change again. Keyed on the code the request was made
+        # with, not the barcode. Lives for the integration's lifetime
+        # (resets on restart).
+        self._delivered_codes: set[str] = set()
         # barcode -> last seen ParcelStatus / (planned_from, planned_to).
         # ``None`` on the first refresh so events are suppressed for parcels
         # that already existed when the integration started — otherwise every
@@ -169,6 +175,11 @@ class CeskaPostaCoordinator(DataUpdateCoordinator[list[dict]]):
     def current_tier_minutes(self) -> int | None:
         """Tier minutes computed on the last refresh (diagnostics only)."""
         return self._current_tier_minutes
+
+    @property
+    def delivered_codes(self) -> set[str]:
+        """Tracking codes currently skipped from the fetch (diagnostics only)."""
+        return self._delivered_codes
 
     def _device_id(self) -> str | None:
         """Resolve (and cache) this entry's device id for event payloads."""
@@ -212,12 +223,18 @@ class CeskaPostaCoordinator(DataUpdateCoordinator[list[dict]]):
         self._raw_cache = {
             code: raw for code, raw in self._raw_cache.items() if code in tracked_codes
         }
+        self._delivered_codes &= tracked_codes
 
-        fetched = await self._client.async_get_parcels(codes)
+        # A delivered parcel's payload can never change again, so it is
+        # dropped from the batch — not from ``codes``/the options list, which
+        # stays untouched until the user removes it by hand.
+        codes_to_fetch = [code for code in codes if code not in self._delivered_codes]
 
-        raws: list[dict] = []
+        fetched = await self._client.async_get_parcels(codes_to_fetch)
+
+        raws_by_code: dict[str, dict] = {}
         errors = 0
-        for code in codes:
+        for code in codes_to_fetch:
             result = fetched.get(code) or {"backbone": None, "enrichment": None}
             if result["backbone"] is None and result["enrichment"] is None:
                 # Both surfaces failed outright for this code (network/API
@@ -227,22 +244,34 @@ class CeskaPostaCoordinator(DataUpdateCoordinator[list[dict]]):
                 errors += 1
                 cached = self._raw_cache.get(code)
                 if cached is not None:
-                    raws.append(cached)
+                    raws_by_code[code] = cached
                 continue
 
             raw = {"id": code, **result}
             self._raw_cache[code] = raw
-            raws.append(raw)
+            raws_by_code[code] = raw
 
-        if codes and errors == len(codes) and not raws:
+        # Codes skipped from the batch above (already confirmed delivered) —
+        # re-add their cached payload so the delivered sensor keeps its data
+        # until the retention filter drops it.
+        for code in self._delivered_codes:
+            cached = self._raw_cache.get(code)
+            if cached is not None:
+                raws_by_code[code] = cached
+
+        if codes_to_fetch and errors == len(codes_to_fetch) and not raws_by_code:
             raise UpdateFailed("Ceska Posta unreachable for all tracked parcels")
 
         include_history = self._include_history
-        normalized = [
-            normalize_parcel(raw, include_history=include_history) for raw in raws
+        entries = [
+            (code, normalize_parcel(raw, include_history=include_history))
+            for code, raw in raws_by_code.items()
         ]
-        active = [parcel for parcel in normalized if not parcel["delivered"]]
-        delivered = [parcel for parcel in normalized if parcel["delivered"]]
+        active = [parcel for _, parcel in entries if not parcel["delivered"]]
+        delivered = [parcel for _, parcel in entries if parcel["delivered"]]
+        # Rebuilt fresh from this cycle's data — a code whose payload just
+        # flipped to delivered is skipped starting next cycle.
+        self._delivered_codes = {code for code, parcel in entries if parcel["delivered"]}
 
         self.delivered = apply_delivered_filter(
             sort_parcels_by_ts(delivered, "delivered_at", descending=True),
@@ -266,9 +295,9 @@ class CeskaPostaCoordinator(DataUpdateCoordinator[list[dict]]):
         }
 
         # Only stamp the diagnostic timestamp when at least one fetch actually
-        # succeeded (or nothing is tracked) — a poll served entirely from cache
-        # must not present itself as a successful update.
-        if not codes or errors < len(codes):
+        # succeeded (or nothing needed fetching) — a poll served entirely from
+        # cache must not present itself as a successful update.
+        if not codes_to_fetch or errors < len(codes_to_fetch):
             self.last_success_time = datetime.now(timezone.utc)
 
         now = dt_util.now()
