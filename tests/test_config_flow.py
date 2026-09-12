@@ -18,7 +18,6 @@ from .payloads import active_sample, not_found_sample
 
 VALID_CODE = "AB1234567890C"  # CZ domestic shape: 2 letters + 10 digits + 1 letter
 VALID_CODE_2 = "CD2345678901D"
-VALID_S10_CODE = "RR123456789CZ"  # UPU S10 shape: 2 letters + 9 digits + 2 letters
 
 _PATCH_TARGET = "custom_components.ceska_posta.api.CeskaPostaApiClient.async_get_parcels"
 
@@ -39,12 +38,10 @@ def test_normalize_tracking_code_strips_and_uppercases():
     assert normalize_tracking_code(None) == ""
 
 
-def test_valid_tracking_code_bounds():
+def test_valid_tracking_code_accepts_any_non_empty_code():
     assert valid_tracking_code(VALID_CODE)
-    assert valid_tracking_code(VALID_S10_CODE)
-    assert not valid_tracking_code("ABC")  # too short
-    assert not valid_tracking_code("A" * 13)  # no digits
-    assert not valid_tracking_code("AB123456789012")  # no trailing letter / wrong length
+    assert valid_tracking_code("not a real shape at all")
+    assert not valid_tracking_code("")
 
 
 async def test_user_flow_creates_hub_without_input(hass):

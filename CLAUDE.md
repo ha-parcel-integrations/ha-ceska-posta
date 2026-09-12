@@ -92,15 +92,17 @@ the delivery day — this only applies when the named ETA fields are still
 empty, and only for this one status; `in_transit` can span days and its last
 event date says nothing about when delivery will actually happen.
 
-**The tracking-code format is validated three ways**, because neither
-endpoint enforces it: `config_flow._TRACKING_CODE_RE` (13 chars, CZ domestic
-*or* UPU S10 shape), then a **live lookup**
-(`config_flow.async_code_is_known`) before the options flow accepts a new
-code — it fails *open* on a transient fetch error (adds the code anyway; the
-next poll will show the real state) and only rejects a code whose live result
-resolves to `is_not_found`. The `ceska_posta.track_parcel` service does the
-regex check only, not the live lookup — deliberately, so a service call never
-blocks on a network round-trip.
+**The tracking-code format is no longer shape-checked.** Real codes vary
+(CZ domestic vs. UPU S10, and possibly others neither endpoint documents), so
+gating on a guessed regex added friction without real benefit —
+`config_flow.valid_tracking_code` now accepts any non-empty code. A **live
+lookup** (`config_flow.async_code_is_known`) remains the one real check
+before the options flow accepts a new code — it fails *open* on a transient
+fetch error (adds the code anyway; the next poll will show the real state)
+and only rejects a code whose live result resolves to `is_not_found`. The
+`ceska_posta.track_parcel` service does no shape or live-lookup check at
+all — deliberately, so a service call never blocks on a network round-trip;
+an unrecognized code there simply comes back "not found" on the next poll.
 
 **Diagnostics redaction is non-optional, not defensive.** The Balikovna
 surface returns the recipient's real name, e-mail and phone to *any*

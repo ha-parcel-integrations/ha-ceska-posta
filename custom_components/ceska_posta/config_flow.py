@@ -33,16 +33,6 @@ from .parcels import is_not_found
 
 _LOGGER = logging.getLogger(__name__)
 
-# Two accepted shapes in one 13-character namespace:
-#   CZ domestic:  2 letters + 10 digits + 1 letter   (e.g. AB1234567890C)
-#   UPU S10:      2 letters + 9 digits  + 2 letters   (e.g. RR123456789CZ)
-# Neither endpoint validates this — Balikovna checks length only, ParcelHistory
-# checks nothing — so this regex plus the live lookup below are the only real
-# validation. It is also what the ``track_parcel`` service and the
-# e-mail-parsing example automation validate against.
-_TRACKING_CODE_RE = re.compile(r"^[A-Za-z]{2}\d{9,10}[A-Za-z]{1,2}$")
-
-
 def normalize_tracking_code(value: str) -> str:
     """Return the tracking code upper-cased with separators stripped.
 
@@ -54,8 +44,8 @@ def normalize_tracking_code(value: str) -> str:
 
 
 def valid_tracking_code(value: str) -> bool:
-    """Whether ``value`` matches the Ceska Posta tracking-code format."""
-    return len(value) == 13 and bool(_TRACKING_CODE_RE.match(value))
+    """Accept every non-empty code; Ceska Posta's real formats vary too much to gate on a guessed shape."""
+    return bool(value)
 
 
 async def async_code_is_known(hass, tracking_code: str) -> bool:

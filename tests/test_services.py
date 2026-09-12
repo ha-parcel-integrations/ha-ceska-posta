@@ -72,11 +72,11 @@ async def test_track_parcel_normalizes_code(hass):
     assert entry.options[CONF_PARCELS] == [{CONF_TRACKING_CODE: NEW_CODE}]
 
 
-async def test_track_parcel_rejects_invalid_code(hass):
+async def test_track_parcel_rejects_empty_code(hass):
     await _setup(hass)
     with pytest.raises(ServiceValidationError):
         await hass.services.async_call(
-            DOMAIN, "track_parcel", {CONF_TRACKING_CODE: "abc"}, blocking=True
+            DOMAIN, "track_parcel", {CONF_TRACKING_CODE: ""}, blocking=True
         )
 
 
