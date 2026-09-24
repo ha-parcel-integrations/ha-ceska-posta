@@ -50,15 +50,15 @@ def test_incoming_counts_and_lists():
     assert len(sensor.extra_state_attributes["parcels"]) == 2
 
 
-def test_awaiting_pickup_counts_only_ready_pickup_point_parcels():
+def test_awaiting_pickup_counts_every_parcel_at_pickup_point():
     ready = _parcel("READY", ParcelStatus.AT_PICKUP_POINT, pickup=True)
     not_ready = _parcel("TRANSIT", ParcelStatus.IN_TRANSIT, pickup=False)
     not_pickup = _parcel("NOT_PICKUP", ParcelStatus.AT_PICKUP_POINT, pickup=False)
     sensor = CeskaPostaAwaitingPickupSensor(
         _coordinator([ready, not_ready, not_pickup]), _entry()
     )
-    assert sensor.native_value == 1
-    assert sensor.extra_state_attributes["parcels"] == [ready]
+    assert sensor.native_value == 2
+    assert len(sensor.extra_state_attributes["parcels"]) == 2
 
 
 def test_awaiting_pickup_zero_when_no_parcels():
