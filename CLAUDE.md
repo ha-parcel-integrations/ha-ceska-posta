@@ -124,7 +124,7 @@ not `postaonline.cz`.
 
 **Do not build:** `postaonline.cz`'s HTML track-and-trace page (scrape
 liability, no JSON, fine only as a user-facing link — never a data source);
-the `b2b.postaonline.cz` contract API (business-only credential, HMAC-signed);
+the `b2b.postaonline.cz` contract API (business-only credential);
 `getDataAsXml` (same data as the JSON sibling); an account/inbox model
 (neither surface has one); a `dimensions` value.
 
