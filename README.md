@@ -2,7 +2,7 @@
 
 [![Release](https://img.shields.io/github/v/release/ha-parcel-integrations/ha-ceska-posta.svg)](https://github.com/ha-parcel-integrations/ha-ceska-posta/releases)
 [![Downloads](https://img.shields.io/github/downloads/ha-parcel-integrations/ha-ceska-posta/total.svg)](https://github.com/ha-parcel-integrations/ha-ceska-posta/releases)
-[![HACS](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
+[![HACS](https://img.shields.io/badge/HACS-Default-41BDF5.svg)](https://github.com/hacs/integration)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 > 💬 Questions or feedback? Join the discussion on the [Home Assistant community](https://community.home-assistant.io/t/packages-postnl-dhl-nl-dpd-and-gls-parcel-integration/112433/).
@@ -59,9 +59,8 @@ Part of the [ha-parcel-integrations](https://ha-parcel-integrations.github.io/) 
 
 ### HACS (recommended)
 
-1. In HACS, choose the three-dot menu → **Custom repositories**.
-2. Add `https://github.com/ha-parcel-integrations/ha-ceska-posta` as an **Integration**.
-3. Install **Ceska Posta (Czech Post), including Balikovna** and restart Home Assistant.
+1. Open HACS and search for **Ceska Posta (Czech Post), including Balikovna**.
+2. Install it and restart Home Assistant.
 
 ### Manual
 
