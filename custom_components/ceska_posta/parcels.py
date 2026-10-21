@@ -275,7 +275,9 @@ def _is_backbone_not_found(raw: dict) -> bool:
 def _is_enrichment_not_found(raw: dict) -> bool:
     """Whether the enrichment call's ``sender == "-"`` not-found sentinel fired."""
     enrichment = raw.get("enrichment")
-    return bool(enrichment) and enrichment.get("sender") == "-"
+    if not enrichment:
+        return False
+    return enrichment.get("sender") == "-"
 
 
 def is_not_found(raw: dict) -> bool:
