@@ -1,13 +1,12 @@
 """Tests for the Ceska Posta / Balikovna API client."""
+
 import json
 from unittest.mock import AsyncMock, MagicMock
 
 import aiohttp
 import pytest
 
-from custom_components.ceska_posta.api import (
-    CeskaPostaApiClient,
-)
+from custom_components.ceska_posta.api import CeskaPostaApiClient
 
 CODE_A = "AB1234567890C"
 CODE_B = "CD2345678901D"

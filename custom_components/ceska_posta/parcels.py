@@ -4,10 +4,11 @@ Everything in this module is a **pure function** — no I/O, no Home Assistant
 objects beyond the config entry's options (logging aside, which is the
 established one-shot-warning pattern used throughout the suite).
 """
+
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 import logging
-from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
@@ -106,7 +107,7 @@ def _warn_eta_populated(date_val: Any, od_val: Any, do_val: Any) -> None:
     populated, so the first real sighting is the datum that closes the ETA
     open question in the research doc.
     """
-    global _eta_populated_warned
+    global _eta_populated_warned  # noqa: PLW0603 - one-shot per-process flag
     if _eta_populated_warned:
         return
     _eta_populated_warned = True
@@ -136,7 +137,7 @@ def _warn_unexpected_bg_code(code: str) -> None:
 
 def _warn_bg1_before_terminal() -> None:
     """Log once, ever: BG1 appeared somewhere other than after delivery."""
-    global _bg1_before_terminal_warned
+    global _bg1_before_terminal_warned  # noqa: PLW0603 - one-shot per-process flag
     if _bg1_before_terminal_warned:
         return
     _bg1_before_terminal_warned = True
@@ -173,11 +174,11 @@ def parse_iso(value: str | None) -> datetime | None:
     if not value:
         return None
     try:
-        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(str(value))
     except ValueError:
         return None
     if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
+        parsed = parsed.replace(tzinfo=UTC)
     return parsed
 
 
@@ -193,7 +194,7 @@ def to_iso_timestamp(value: Any) -> str | None:
         return None
     if isinstance(value, (int, float)):
         try:
-            return datetime.fromtimestamp(value / 1000, tz=timezone.utc).isoformat()
+            return datetime.fromtimestamp(value / 1000, tz=UTC).isoformat()
         except (OverflowError, OSError, ValueError):
             return None
     return str(value)
@@ -221,16 +222,18 @@ def _normalized_events(raw: dict) -> list[dict]:
     enrichment event's ``time`` folded in by ``(id, date)``. Falls back to the
     enrichment's own event list when the backbone fetch failed outright.
     """
-    backbone_events = (
-        ((raw.get("backbone") or {}).get("states") or {}).get("state") or []
-    )
+    backbone_events = ((raw.get("backbone") or {}).get("states") or {}).get(
+        "state"
+    ) or []
     enrichment_events = (raw.get("enrichment") or {}).get("packageStates") or []
 
     if backbone_events:
         times: dict[tuple[Any, Any], str] = {}
         for event in enrichment_events:
             if isinstance(event, dict) and event.get("time"):
-                times.setdefault((event.get("stateId"), event.get("date")), event["time"])
+                times.setdefault(
+                    (event.get("stateId"), event.get("date")), event["time"]
+                )
         normalized = []
         for event in backbone_events:
             if not isinstance(event, dict):
@@ -492,14 +495,12 @@ def apply_delivered_filter(parcels: list[dict], entry: ConfigEntry) -> list[dict
     shows.
     """
     options = entry.options
-    filter_type = options.get(
-        CONF_DELIVERED_FILTER_TYPE, DEFAULT_DELIVERED_FILTER_TYPE
-    )
+    filter_type = options.get(CONF_DELIVERED_FILTER_TYPE, DEFAULT_DELIVERED_FILTER_TYPE)
     amount = int(
         options.get(CONF_DELIVERED_FILTER_AMOUNT, DEFAULT_DELIVERED_FILTER_AMOUNT)
     )
     if filter_type == "days":
-        cutoff = datetime.now(timezone.utc) - timedelta(days=amount)
+        cutoff = datetime.now(UTC) - timedelta(days=amount)
         return [
             parcel
             for parcel in parcels

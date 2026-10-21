@@ -3,6 +3,7 @@
 Every tracking code, name and address below is invented for these tests — no
 real parcel data.
 """
+
 from __future__ import annotations
 
 ACTIVE_CODE = "AB1234567890C"  # out_for_delivery, door-delivery path
@@ -140,7 +141,10 @@ def delivered_sample(code: str = DELIVERED_CODE) -> dict:
     events = [
         backbone_event("-M", "2026-04-24", "Receipt of data about consignment."),
         backbone_event(
-            "21", "2026-04-25", "The consignment was sent for transportation.", id_icon=2
+            "21",
+            "2026-04-25",
+            "The consignment was sent for transportation.",
+            id_icon=2,
         ),
         backbone_event(
             "-B",
@@ -149,7 +153,10 @@ def delivered_sample(code: str = DELIVERED_CODE) -> dict:
             id_icon=3,
         ),
         backbone_event(
-            "51", "2026-04-27", "The consignment is being prepared for delivery.", id_icon=4
+            "51",
+            "2026-04-27",
+            "The consignment is being prepared for delivery.",
+            id_icon=4,
         ),
         backbone_event(
             "53", "2026-04-27", "The consignment is being delivered.", id_icon=5
@@ -158,7 +165,11 @@ def delivered_sample(code: str = DELIVERED_CODE) -> dict:
     ]
     enrichment_events = [
         enrichment_event(
-            "91", "2026-04-27", "The consignment was delivered.", icon_id="8", time="16:42"
+            "91",
+            "2026-04-27",
+            "The consignment was delivered.",
+            icon_id="8",
+            time="16:42",
         ),
     ]
     backbone = backbone_body(code, weight=1.25, events=events)
@@ -177,7 +188,10 @@ def active_sample(code: str = ACTIVE_CODE) -> dict:
     events = [
         backbone_event("-M", "2026-04-28", "Receipt of data about consignment."),
         backbone_event(
-            "21", "2026-04-28", "The consignment was sent for transportation.", id_icon=2
+            "21",
+            "2026-04-28",
+            "The consignment was sent for transportation.",
+            id_icon=2,
         ),
         backbone_event(
             "-B",
@@ -186,7 +200,10 @@ def active_sample(code: str = ACTIVE_CODE) -> dict:
             id_icon=3,
         ),
         backbone_event(
-            "51", "2026-04-29", "The consignment is being prepared for delivery.", id_icon=4
+            "51",
+            "2026-04-29",
+            "The consignment is being prepared for delivery.",
+            id_icon=4,
         ),
         backbone_event(
             "53", "2026-04-29", "The consignment is being delivered.", id_icon=5
@@ -207,12 +224,18 @@ def in_transit_sample(code: str = ACTIVE_CODE) -> dict:
     events = [
         backbone_event("-M", "2026-04-27", "Receipt of data about consignment."),
         backbone_event(
-            "21", "2026-04-28", "The consignment was sent for transportation.", id_icon=2
+            "21",
+            "2026-04-28",
+            "The consignment was sent for transportation.",
+            id_icon=2,
         ),
     ]
     backbone = backbone_body(code, weight=0.9, events=events)
     enrichment = enrichment_body(
-        code, sender="Example Shop", recipient="Example Recipient", status_message="IN TRANSIT"
+        code,
+        sender="Example Shop",
+        recipient="Example Recipient",
+        status_message="IN TRANSIT",
     )
     return raw(code, backbone=backbone, enrichment=enrichment)
 
@@ -222,13 +245,22 @@ def pickup_sample(code: str = PICKUP_CODE) -> dict:
     events = [
         backbone_event("-M", "2026-04-20", "Receipt of data about consignment."),
         backbone_event(
-            "21", "2026-04-21", "The consignment was sent for transportation.", id_icon=2
+            "21",
+            "2026-04-21",
+            "The consignment was sent for transportation.",
+            id_icon=2,
         ),
         backbone_event(
-            "-K", "2026-04-22", "The consignment is being transported to Balikovna.", id_icon=3
+            "-K",
+            "2026-04-22",
+            "The consignment is being transported to Balikovna.",
+            id_icon=3,
         ),
         backbone_event(
-            "5K", "2026-04-22", "The consignment is being transported to Balikovna.", id_icon=3
+            "5K",
+            "2026-04-22",
+            "The consignment is being transported to Balikovna.",
+            id_icon=3,
         ),
         backbone_event(
             "P2", "2026-04-22", "The consignment was deposited to Balikovna.", id_icon=7

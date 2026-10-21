@@ -1,4 +1,5 @@
 """Tests for Ceska Posta device triggers."""
+
 from custom_components.ceska_posta.const import DOMAIN
 from custom_components.ceska_posta.device_trigger import (
     TRIGGER_EVENTS,

@@ -1,21 +1,20 @@
 """Tests for the Ceska Posta services (track_parcel / untrack_parcel)."""
+
 from unittest.mock import AsyncMock, patch
 
-import pytest
 from homeassistant.exceptions import ServiceValidationError
+import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.ceska_posta.const import (
-    CONF_PARCELS,
-    CONF_TRACKING_CODE,
-    DOMAIN,
-)
+from custom_components.ceska_posta.const import CONF_PARCELS, CONF_TRACKING_CODE, DOMAIN
 
 from .payloads import active_sample
 
 NEW_CODE = "CD2345678901D"
 
-_PATCH_TARGET = "custom_components.ceska_posta.api.CeskaPostaApiClient.async_get_parcels"
+_PATCH_TARGET = (
+    "custom_components.ceska_posta.api.CeskaPostaApiClient.async_get_parcels"
+)
 
 
 def _entry_result(code: str) -> dict:

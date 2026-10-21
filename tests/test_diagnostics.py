@@ -1,11 +1,10 @@
 """Tests for Ceska Posta diagnostics."""
-import json
+
 from datetime import timedelta
+import json
 from unittest.mock import MagicMock
 
-from custom_components.ceska_posta.diagnostics import (
-    async_get_config_entry_diagnostics,
-)
+from custom_components.ceska_posta.diagnostics import async_get_config_entry_diagnostics
 
 CODE = "AB1234567890C"
 

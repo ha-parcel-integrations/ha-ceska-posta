@@ -2,9 +2,12 @@
 
 The parcel mapping itself is covered by ``test_parcels.py``.
 """
-from datetime import datetime, timedelta, timezone
+
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock
 
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers.update_coordinator import UpdateFailed
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -65,8 +68,6 @@ def _entry_with(parcels: list[dict]) -> MockConfigEntry:
 # ---------------------------------------------------------------------------
 # Dynamic polling (Section 2.1, barcode-based) — pure helpers
 # ---------------------------------------------------------------------------
-
-UTC = timezone.utc
 
 
 def test_quiet_window_is_midnight_to_six():
@@ -133,7 +134,10 @@ def test_tier_is_mid_before_lookahead_of_planned_from():
 
 
 def test_next_update_interval_is_none_for_none_tier():
-    assert _next_update_interval(datetime(2026, 1, 1, 12, tzinfo=UTC), None, "entry-1") is None
+    assert (
+        _next_update_interval(datetime(2026, 1, 1, 12, tzinfo=UTC), None, "entry-1")
+        is None
+    )
 
 
 def test_daytime_candidate_outside_window_is_tier_plus_stagger():
@@ -287,8 +291,6 @@ async def test_update_keeps_cached_payload_on_error(hass):
 
 
 async def test_update_raises_when_every_parcel_fails(hass):
-    from homeassistant.helpers.update_coordinator import UpdateFailed
-
     entry = _entry_with([{CONF_TRACKING_CODE: DELIVERED_CODE}])
     entry.add_to_hass(hass)
     client = AsyncMock()
@@ -335,7 +337,11 @@ async def test_update_prunes_cache_for_untracked_parcels(hass):
         DELIVERED_CODE: _client_result(delivered_sample())
     }
     coordinator = CeskaPostaCoordinator(hass, client, entry)
-    coordinator._raw_cache["GONE"] = {"id": "GONE", "backbone": None, "enrichment": None}
+    coordinator._raw_cache["GONE"] = {
+        "id": "GONE",
+        "backbone": None,
+        "enrichment": None,
+    }
 
     await coordinator._async_update_data()
 
@@ -390,7 +396,9 @@ async def test_first_refresh_fires_nothing(hass):
     entry = _entry_with([{CONF_TRACKING_CODE: ACTIVE_CODE}])
     entry.add_to_hass(hass)
     client = AsyncMock()
-    client.async_get_parcels.return_value = {ACTIVE_CODE: _client_result(active_sample())}
+    client.async_get_parcels.return_value = {
+        ACTIVE_CODE: _client_result(active_sample())
+    }
     coordinator = CeskaPostaCoordinator(hass, client, entry)
 
     fired = []
@@ -409,8 +417,6 @@ async def test_first_refresh_fires_nothing(hass):
 
 
 async def test_event_carries_device_id(hass):
-    from homeassistant.helpers import device_registry as dr
-
     entry = _entry_with([{CONF_TRACKING_CODE: ACTIVE_CODE}])
     entry.add_to_hass(hass)
     device = dr.async_get(hass).async_get_or_create(
@@ -421,15 +427,15 @@ async def test_event_carries_device_id(hass):
     coordinator = CeskaPostaCoordinator(hass, client, entry)
 
     events = []
-    hass.bus.async_listen(
-        f"{DOMAIN}_parcel_status_changed", lambda e: events.append(e)
-    )
+    hass.bus.async_listen(f"{DOMAIN}_parcel_status_changed", lambda e: events.append(e))
 
     client.async_get_parcels.return_value = {
         ACTIVE_CODE: _client_result(in_transit_sample())
     }
     await coordinator._async_update_data()
-    client.async_get_parcels.return_value = {ACTIVE_CODE: _client_result(active_sample())}
+    client.async_get_parcels.return_value = {
+        ACTIVE_CODE: _client_result(active_sample())
+    }
     await coordinator._async_update_data()
     await hass.async_block_till_done()
 
@@ -443,16 +449,16 @@ async def test_fires_status_changed_event(hass):
     coordinator = CeskaPostaCoordinator(hass, client, entry)
 
     events = []
-    hass.bus.async_listen(
-        f"{DOMAIN}_parcel_status_changed", lambda e: events.append(e)
-    )
+    hass.bus.async_listen(f"{DOMAIN}_parcel_status_changed", lambda e: events.append(e))
 
     client.async_get_parcels.return_value = {
         ACTIVE_CODE: _client_result(in_transit_sample())
     }
     await coordinator._async_update_data()  # first refresh: suppressed
 
-    client.async_get_parcels.return_value = {ACTIVE_CODE: _client_result(active_sample())}
+    client.async_get_parcels.return_value = {
+        ACTIVE_CODE: _client_result(active_sample())
+    }
     await coordinator._async_update_data()  # out for delivery
     await hass.async_block_till_done()
 

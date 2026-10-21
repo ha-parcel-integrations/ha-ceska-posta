@@ -19,6 +19,7 @@ the coordinator can fall back to cached data. Only a bug elsewhere (an
 exception that is neither :class:`CeskaPostaApiError` nor
 ``aiohttp.ClientError``) propagates.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -71,7 +72,7 @@ class CeskaPostaApiClient:
         )
 
         merged: dict[str, dict[str, Any]] = {}
-        for code, enrichment in zip(tracking_codes, enrichment_results):
+        for code, enrichment in zip(tracking_codes, enrichment_results, strict=True):
             if isinstance(enrichment, BaseException):
                 if not isinstance(
                     enrichment, (CeskaPostaApiError, aiohttp.ClientError)
@@ -101,9 +102,13 @@ class CeskaPostaApiClient:
             # The endpoint documents the array as one object per id, in
             # request order; zip rather than trust an echoed id so a chunk
             # that comes back short can't shift every later code's mapping.
-            for code, obj in zip(chunk, objects):
-                if isinstance(obj, dict):
-                    results[code] = obj
+            results.update(
+                {
+                    code: obj
+                    for code, obj in zip(chunk, objects, strict=False)
+                    if isinstance(obj, dict)
+                }
+            )
         return results
 
     async def _async_get_backbone_chunk(self, codes: list[str]) -> list[Any]:
@@ -136,9 +141,7 @@ class CeskaPostaApiClient:
             try:
                 payload = await response.json(content_type=None)
             except ValueError as err:
-                raise CeskaPostaApiError(
-                    f"unparseable Balikovna body ({err})"
-                ) from err
+                raise CeskaPostaApiError(f"unparseable Balikovna body ({err})") from err
         if not isinstance(payload, dict):
             raise CeskaPostaApiError("unexpected Balikovna body (not a JSON object)")
         return payload

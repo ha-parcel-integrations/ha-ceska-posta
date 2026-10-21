@@ -1,21 +1,20 @@
 """Tests for Ceska Posta setup and unload."""
+
 from unittest.mock import AsyncMock, patch
 
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.ceska_posta.const import (
-    CONF_PARCELS,
-    CONF_TRACKING_CODE,
-    DOMAIN,
-)
+from custom_components.ceska_posta.const import CONF_PARCELS, CONF_TRACKING_CODE, DOMAIN
 
 from .payloads import ACTIVE_CODE, active_sample
 
 OTHER_CODE = "GH4567890123H"
 
-_PATCH_TARGET = "custom_components.ceska_posta.api.CeskaPostaApiClient.async_get_parcels"
+_PATCH_TARGET = (
+    "custom_components.ceska_posta.api.CeskaPostaApiClient.async_get_parcels"
+)
 
 
 def _entry_result(code: str) -> dict:
@@ -71,7 +70,9 @@ async def test_setup_retries_when_first_refresh_fails(hass):
     )
     entry.add_to_hass(hass)
 
-    with patch(_PATCH_TARGET, new=AsyncMock(return_value={})):  # neither surface answered
+    with patch(
+        _PATCH_TARGET, new=AsyncMock(return_value={})
+    ):  # neither surface answered
         assert not await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
