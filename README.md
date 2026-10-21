@@ -60,7 +60,11 @@ code yourself, just like on the Ceska Posta or Balikovna website.
 ### HACS (recommended)
 
 1. Open HACS and search for **Ceska Posta (Czech Post), including Balikovna**.
-2. Install it and restart Home Assistant.
+2. Install it and restart Home Assistant if HACS asks you to.
+
+Or click the button below to open it directly in HACS:
+
+[![Open your Home Assistant instance and open this repository in the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ha-parcel-integrations&repository=ha-ceska-posta&category=integration)
 
 ### Manual
 
@@ -68,7 +72,9 @@ Copy `custom_components/ceska_posta` into your `config/custom_components/` folde
 
 ## Configuration
 
-Add the integration via **Settings → Devices & Services → Add Integration → Ceska Posta**. There is nothing to fill in: the hub is created immediately (Ceska Posta tracking needs no account).
+[![Open your Home Assistant instance and start setting up this integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=ceska_posta)
+
+Or set it up by hand: add the integration via **Settings → Devices & Services → Add Integration → Ceska Posta**. There is nothing to fill in: the hub is created immediately (Ceska Posta tracking needs no account).
 
 Then add parcels via the integration's **Configure** dialog, the [`ceska_posta.track_parcel`](#services) service, or a [dashboard button](examples/dashboards/add_parcel_card.yaml). The tracking code is on your shipping confirmation email or the missed-delivery card.
 
