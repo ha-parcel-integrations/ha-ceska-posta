@@ -640,3 +640,33 @@ async def test_failed_poll_drops_the_overnight_interval(hass):
     assert coordinator.update_interval <= timedelta(
         minutes=MID_INTERVAL_MINUTES + STAGGER_MINUTES
     )
+
+
+async def test_a_parcel_the_delivered_list_leaves_out_still_fires_delivered(hass):
+    """The retention option limits the delivered sensor, never the events."""
+    first, second = ACTIVE_CODE, "SECOND000001"
+    entry = _entry_with([{CONF_TRACKING_CODE: first}, {CONF_TRACKING_CODE: second}])
+    entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(
+        entry, options={**entry.options, CONF_DELIVERED_FILTER_AMOUNT: 1}
+    )
+    client = AsyncMock()
+    coordinator = CeskaPostaCoordinator(hass, client, entry)
+
+    delivered = []
+    hass.bus.async_listen(f"{DOMAIN}_parcel_delivered", lambda e: delivered.append(e))
+
+    client.async_get_parcels.return_value = {
+        first: _client_result(active_sample(first)),
+        second: _client_result(active_sample(second)),
+    }
+    await coordinator._async_update_data()
+    client.async_get_parcels.return_value = {
+        first: _client_result(delivered_sample(first)),
+        second: _client_result(delivered_sample(second)),
+    }
+    await coordinator._async_update_data()
+    await hass.async_block_till_done()
+
+    assert sorted(e.data["barcode"] for e in delivered) == sorted([first, second])
+    assert len(coordinator.delivered) == 1
