@@ -122,6 +122,7 @@ Standard HA removal applies: **Settings → Devices & Services → Ceska Posta �
 | `sensor.ceska_posta_incoming_parcels` | Number of active tracked parcels, full list under the `parcels` attribute |
 | `sensor.ceska_posta_parcel_<code>` | One per tracked parcel; state is the canonical status, attributes carry the full normalised parcel |
 | `sensor.ceska_posta_next_delivery` | Earliest expected delivery moment across all active parcels |
+| `sensor.ceska_posta_awaiting_pickup` | Incoming parcels that are ready to collect at a pickup point |
 | `sensor.ceska_posta_delivered_parcels` | Recently delivered parcels (see the retention option) |
 | `sensor.ceska_posta_last_successful_update` | Diagnostic: when Ceska Posta was last polled successfully |
 | `calendar.ceska_posta_deliveries` | Expected delivery dates for active parcels, read-only, no extra API calls |
@@ -192,7 +193,7 @@ logger:
   not an error), or the code is wrong. It picks up automatically once
   scanned. Adding a genuinely unrecognised code in the options dialog is
   rejected up front by a live lookup.
-- **A status logs "Unrecognised Ceska Posta status"** — please [open an issue](https://github.com/ha-parcel-integrations/ha-ceska-posta/issues/new) with the logged line so the mapping can be extended. Ceska Posta publishes no complete status-code list, so `returning`/`problem`/failed-delivery codes are expected to surface this way the first time they occur.
+- **A status logs "Unrecognised Ceska Posta status"** — please [open an issue](https://github.com/ha-parcel-integrations/ha-ceska-posta/issues/new?template=unrecognised_status.yml) with the logged line so the mapping can be extended. Ceska Posta publishes no complete status-code list, so `returning`/`problem`/failed-delivery codes are expected to surface this way the first time they occur.
 
 ## Related integrations
 
