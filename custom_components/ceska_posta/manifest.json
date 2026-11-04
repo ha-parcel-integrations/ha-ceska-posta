@@ -1,6 +1,7 @@
 {
   "domain": "ceska_posta",
   "name": "Ceska Posta & Balikovna",
+  "categories": ["productivity_information"],
   "codeowners": [
     "@peter-mdf"
   ],
