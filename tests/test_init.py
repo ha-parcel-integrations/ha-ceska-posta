@@ -152,3 +152,28 @@ async def test_options_update_applies_live_without_reload(hass):
 
     incoming = hass.states.get("sensor.ceska_posta_incoming_parcels")
     assert incoming.state == "2"
+
+
+async def test_pickup_sensors_registered_and_restored_not_swept(hass):
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id=DOMAIN,
+        options={CONF_PARCELS: [{CONF_TRACKING_CODE: ACTIVE_CODE}]},
+    )
+    entry.add_to_hass(hass)
+    registry = er.async_get(hass)
+    registry.async_get_or_create(
+        "sensor",
+        DOMAIN,
+        f"{entry.entry_id}_awaiting_pickup",
+        config_entry=entry,
+    )
+
+    with patch(_PATCH_TARGET, new=AsyncMock(return_value=_result(ACTIVE_CODE))):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    assert hass.states.get("sensor.ceska_posta_on_the_way_to_pickup_point") is not None
+    assert registry.async_get_entity_id(
+        "sensor", DOMAIN, f"{entry.entry_id}_awaiting_pickup"
+    )

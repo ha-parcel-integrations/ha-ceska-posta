@@ -76,17 +76,26 @@ report a delivered parcel as `at_pickup_point`. Three additional one-shot
 (never observed populated — the first sighting is data, not noise), and a
 `BG*` code outside the known three, or a `BG1` seen before any terminal event.
 
+**`pickup`** is true when the Balikovna call names a pickup place or the
+parcel reached `at_pickup_point` at any point, so it stays true after
+collection; `pickup_point` is the place's name only, no address.
+
+**`en_route_to_pickup_point`** counts active `pickup` parcels not yet
+`at_pickup_point` and not `returning`. Balikovna names the place before the
+parcel arrives, so it can fill ahead of `awaiting_pickup`. Pending: no
+real parcel has shown it yet, so both pickup sensors may read 0 until then.
+
 **`dimensions` is always `None` by design**, not a gap — `dimensionType` is a
 size-class letter (`"M"`), not L×W×H. `const.CAPABILITIES` omits `dimensions`
 accordingly; keep the two in agreement if that ever changes.
 
-**`planned_to` falls back to `storedTo`** (the Balikovna collection deadline)
-while a parcel's status is `at_pickup_point`, since the named ETA window has
-never been observed populated on any sample.
+**`storedTo` (the Balikovna collection deadline) is not a delivery time.**
+`planned_*` stays empty at `at_pickup_point` (the parcel has arrived); the
+deadline is only kept in `raw`.
 
 **`out_for_delivery` fills `planned_from`/`planned_to` from the `53` event's
-own date**, spanning the full day (`00:00:00`–`23:59:59`) since no
-time-of-day is ever given either. `ParcelStatus.OUT_FOR_DELIVERY` is defined
+own date**, spanning the full Europe/Prague day (`00:00:00`–`23:59:59`) since
+no time-of-day is ever given either. `ParcelStatus.OUT_FOR_DELIVERY` is defined
 suite-wide as "on a delivery vehicle today", so the event date already *is*
 the delivery day — this only applies when the named ETA fields are still
 empty, and only for this one status; `in_transit` can span days and its last

@@ -36,12 +36,10 @@ from .payloads import (
     DELIVERED_CODE,
     NOT_FOUND_CODE,
     OTHER_CODE,
-    PICKUP_CODE,
     active_sample,
     delivered_sample,
     in_transit_sample,
     not_found_sample,
-    pickup_sample,
 )
 
 
@@ -565,9 +563,8 @@ async def test_fires_registered_event_for_new_parcel(hass):
 
 
 async def test_fires_delivery_time_changed_event(hass):
-    """Balikovna's ``storedTo`` collection deadline moving is the real-world
-    case a pickup-point parcel's ``planned_to`` can change."""
-    entry = _entry_with([{CONF_TRACKING_CODE: PICKUP_CODE}])
+    """A named delivery window that moves fires the delivery-time event."""
+    entry = _entry_with([{CONF_TRACKING_CODE: ACTIVE_CODE}])
     entry.add_to_hass(hass)
     client = AsyncMock()
     coordinator = CeskaPostaCoordinator(hass, client, entry)
@@ -577,25 +574,35 @@ async def test_fires_delivery_time_changed_event(hass):
         f"{DOMAIN}_parcel_delivery_time_changed", lambda e: events.append(e)
     )
 
+    def sample(start: str | None, end: str | None) -> dict:
+        data = active_sample()
+        data["backbone"]["attributes"]["dorucovaniOd"] = start
+        data["backbone"]["attributes"]["dorucovaniDo"] = end
+        return data
+
     client.async_get_parcels.return_value = {
-        PICKUP_CODE: _client_result(pickup_sample())
+        ACTIVE_CODE: _client_result(
+            sample("2099-04-29T10:00:00Z", "2099-04-29T12:00:00Z")
+        )
     }
     await coordinator._async_update_data()  # first refresh: suppressed
 
-    moved = pickup_sample()
-    moved["enrichment"]["storedTo"] = "2026-05-02"
-    client.async_get_parcels.return_value = {PICKUP_CODE: _client_result(moved)}
+    client.async_get_parcels.return_value = {
+        ACTIVE_CODE: _client_result(
+            sample("2099-04-30T10:00:00Z", "2099-04-30T12:00:00Z")
+        )
+    }
     await coordinator._async_update_data()
     await hass.async_block_till_done()
 
     assert len(events) == 1
-    assert events[0].data["old_planned_to"] == "2026-04-29"
-    assert events[0].data["new_planned_to"] == "2026-05-02"
+    assert events[0].data["old_planned_to"] == "2099-04-29T12:00:00Z"
+    assert events[0].data["new_planned_to"] == "2099-04-30T12:00:00Z"
 
 
 async def test_losing_the_eta_is_silent(hass):
     """value -> null just means the carrier lost the window; not worth an alert."""
-    entry = _entry_with([{CONF_TRACKING_CODE: PICKUP_CODE}])
+    entry = _entry_with([{CONF_TRACKING_CODE: ACTIVE_CODE}])
     entry.add_to_hass(hass)
     client = AsyncMock()
     coordinator = CeskaPostaCoordinator(hass, client, entry)
@@ -605,14 +612,14 @@ async def test_losing_the_eta_is_silent(hass):
         f"{DOMAIN}_parcel_delivery_time_changed", lambda e: events.append(e)
     )
 
-    client.async_get_parcels.return_value = {
-        PICKUP_CODE: _client_result(pickup_sample())
-    }
+    with_eta = active_sample()
+    with_eta["backbone"]["attributes"]["dorucovaniOd"] = "2099-04-29T10:00:00Z"
+    client.async_get_parcels.return_value = {ACTIVE_CODE: _client_result(with_eta)}
     await coordinator._async_update_data()
 
-    dropped = pickup_sample()
-    dropped["enrichment"]["storedTo"] = None
-    client.async_get_parcels.return_value = {PICKUP_CODE: _client_result(dropped)}
+    # The out-for-delivery event date still fills a window, so drop that too.
+    dropped = in_transit_sample()
+    client.async_get_parcels.return_value = {ACTIVE_CODE: _client_result(dropped)}
     await coordinator._async_update_data()
     await hass.async_block_till_done()
 

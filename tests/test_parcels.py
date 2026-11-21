@@ -340,7 +340,7 @@ def test_capabilities_match_what_normalize_parcel_actually_returns():
     if "weight" in CAPABILITIES:
         assert delivered["weight"] is not None
     if "delivery_window" in CAPABILITIES:
-        assert pickup["planned_to"] is not None
+        assert normalize_parcel(active_sample())["planned_to"] is not None
     if "pickup_point" in CAPABILITIES:
         assert pickup["pickup_point"] is not None
     if "url" in CAPABILITIES:
@@ -389,8 +389,8 @@ def test_normalize_out_for_delivery_uses_event_date_as_planned_window():
     """No named ETA is ever populated, but OUT_FOR_DELIVERY means "on a
     delivery vehicle today" — the ``53`` event's own date fills the day."""
     parcel = normalize_parcel(active_sample())
-    assert parcel["planned_from"] == "2026-04-29T00:00:00"
-    assert parcel["planned_to"] == "2026-04-29T23:59:59"
+    assert parcel["planned_from"] == "2026-04-29T00:00:00+02:00"
+    assert parcel["planned_to"] == "2026-04-29T23:59:59+02:00"
 
 
 def test_normalize_out_for_delivery_keeps_named_eta_when_populated():
@@ -407,16 +407,14 @@ def test_normalize_in_transit_parcel():
     assert parcel["status"] == ParcelStatus.IN_TRANSIT
 
 
-def test_normalize_pickup_parcel_uses_stored_to_as_planned_to():
+def test_normalize_pickup_parcel_has_no_window_and_ignores_stored_to():
     parcel = normalize_parcel(pickup_sample())
     assert parcel["status"] == ParcelStatus.AT_PICKUP_POINT
     assert parcel["pickup"] is True
-    assert parcel["pickup_point"] == (
-        "Example Point Central Station, Example street 1, 100 00, Prague"
-    )
-    # The named ETA fields are never populated; storedTo (the collection
-    # deadline) is what a user actually needs while awaiting pickup.
-    assert parcel["planned_to"] == "2026-04-29"
+    assert parcel["pickup_point"] == ("Example Point Central Station")
+    assert parcel["planned_from"] is None
+    assert parcel["planned_to"] is None
+    assert parcel["raw"]["enrichment"]["storedTo"] == "2026-04-29"
 
 
 def test_normalize_not_found_parcel_is_unknown_and_warns_once(caplog):
