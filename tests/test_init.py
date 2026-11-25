@@ -173,7 +173,7 @@ async def test_pickup_sensors_registered_and_restored_not_swept(hass):
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
-    assert hass.states.get("sensor.ceska_posta_on_the_way_to_pickup_point") is not None
+    assert hass.states.get("sensor.ceska_posta_en_route_to_pickup_point") is not None
     assert registry.async_get_entity_id(
         "sensor", DOMAIN, f"{entry.entry_id}_awaiting_pickup"
     )
