@@ -37,6 +37,16 @@ def _cal(data):
     return CeskaPostaDeliveriesCalendar(_coordinator(data), _entry())
 
 
+def test_event_title_prefers_contents_then_sender_then_barcode():
+    data = [_parcel("A", planned_from="2099-05-01T10:00:00Z")]
+    data[0]["contents"] = "Running shoes"
+    assert _cal(data).event.summary == "Running shoes"
+    data[0]["contents"] = None
+    assert _cal(data).event.summary == "Example Sender"
+    data[0]["sender"] = None
+    assert _cal(data).event.summary == "Parcel A"
+
+
 def test_event_returns_earliest_upcoming():
     cal = _cal(
         [
